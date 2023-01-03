@@ -11,6 +11,7 @@ You can download QuaDRiGa in https://quadriga-channel-model.de/ and generate cha
       2000 sample channel data (5.3GHz) are given in ./filepath  
       
 **run**:   
+open 'main.py'  
 adjust parameters (dimension of codeword, the number of epochs, ...)  
      and run 'main.py'.  
      
