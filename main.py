@@ -18,24 +18,29 @@ device = 'cuda'
 #########run########
 
 def run(encoded_dim):
-    #offline learning
+    # offline learning
     trainer = train('./filepath/data_large.csv',
                     epochs, encoded_dim, learning_rate, lr_decay_freq,  lr_decay, print_freq, device)
     encoder, decoder = trainer.train_epoch()
     
-    #test offline learning in different scenario
+    
+    # if you want run only CsiNet (without online learning), ignore below. #
+    ########################################################################
+    
+    
+    # test offline learning in different scenario
     online_trainer1 = train('./filepath/data_online.csv',
                            0, encoded_dim, learning_rate, lr_decay_freq, lr_decay, print_freq, device,
                            online=True, encoder=encoder, decoder=decoder)
     online_trainer1.train_epoch()
     
-    #online fine tuning (with offline pretrained model)
+    # online fine tuning (with offline pretrained model)
     online_trainer2 = train('./filepath/data_online.csv',
                            epochs, encoded_dim, learning_rate, lr_decay_freq, lr_decay, print_freq, device,
                            online=True, encoder=encoder, decoder=decoder)
     online_trainer2.train_epoch()
     
-    #only learning with the online dataset
+    # only learning with the online dataset
     online_trainer3 = train('./filepath/data_online.csv',
                     epochs, encoded_dim, learning_rate, lr_decay_freq, lr_decay, print_freq, device)
     online_trainer3.train_epoch()
