@@ -34,6 +34,6 @@ Therefore, it is helpful to do fine tuning with each BS's data.
 Since UE cannot transmit the whole channel matrix to BS,   
 BS doesn't have knowledge about data label.  
 Moreover, BS can't deliver the gradient flow to UE, so that the encoder in UE cannot be updated.  
-Therefore, the online learning only learns decoder part.  
+Therefore, the online learning only learns decoder part, without knowledge of channel label.
 
 
