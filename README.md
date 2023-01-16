@@ -2,8 +2,8 @@
 Pytorch implementation of CsiNet (C. Wen, 2018)  
 and online learning (Y. Cui, 2022)
 
-Chao-Kai Wen, Wan-Ting Shih, and Shi Jin, “Deep learning for massive MIMO CSI feedback,” IEEE Wireless Communications Letters, 2018.   
-Yiming Cui, Jiajia Guo, Chao-Kai Wen, Shi Jin, and Shuangfeng Han, "Unsupervised Online Learning in Deep Learning-Based Massive MIMO CSI Feedback", Unsupervised Online Learning in Deep Learning-Based Massive MIMO CSI Feedback, 2022.
+[1] Chao-Kai Wen, Wan-Ting Shih, and Shi Jin, “Deep learning for massive MIMO CSI feedback,” IEEE Wireless Communications Letters, 2018.   
+[2] Yiming Cui, Jiajia Guo, Chao-Kai Wen, Shi Jin, and Shuangfeng Han, "Unsupervised Online Learning in Deep Learning-Based Massive MIMO CSI Feedback", Unsupervised Online Learning in Deep Learning-Based Massive MIMO CSI Feedback, 2022.
 
 some of functions are from https://github.com/WilliamYangXu/CSITransformer.
   
