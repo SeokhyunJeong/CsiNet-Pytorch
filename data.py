@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-batch_size = 32
+batch_size = 16
 Nc = 32  # The number of subcarriers
 Nt = 32  # The number of transmit antennas
 N_channel = 2  # Real, Imaginary
@@ -34,12 +34,16 @@ def channel_visualization(image):
     plt.show()
 
 def load_data(file_path):
-    data = pd.read_csv(file_path+"/data_large.csv", header=None)
+    data = pd.read_csv(file_path, header=None)
     data = data.astype('float32')
     data = data.to_numpy()
 
     partition = int(data.shape[0] * train_ratio)
     x_train, x_test = data[:partition, :], data[partition:, :]
+    for i in range(len(x_train)):
+        x_train[i] = (x_train[i] - x_train[i].mean()) / x_train.std()
+    for i in range(len(x_test)):
+        x_test[i] = (x_test[i] - x_test[i].mean()) / x_test.std()
    # x_train = np.transpose(x_train, (1, 2))
     x_train = np.reshape(x_train, (-1, 2, 32, 32))
     x_test = np.reshape(x_test, (-1, 2, 32, 32))
@@ -55,5 +59,3 @@ def load_data(file_path):
                                               shuffle=False, num_workers=0,
                                               pin_memory=True, drop_last=True)
     return train_loader, test_loader
-
-load_data(file_path='./filepath')
