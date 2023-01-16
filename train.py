@@ -88,11 +88,20 @@ class train(nn.Module):
                 self.optimizer_ue.param_groups[0]['lr'] = self.optimizer_ue.param_groups[0]['lr'] * self.lr_decay
                 self.optimizer_bs.param_groups[0]['lr'] = self.optimizer_bs.param_groups[0]['lr'] * self.lr_decay
 
+#             __________                           __________
+#             |         \                         /         |
+#             |          |                       |          |
+# input ----> |encoder_ue| ----> codeword ---->  |decoder_bs| ----> output ----------
+# (2,Nc,Nt)   |          |     (encoded_dim)     |          |      (2,Nc,Nt)        |
+#   |         |_________/                         \_________|                       v
+#   |                                                                              MSE
+#   |                                                                               ^
+#   |_______________________________________________________________________________|
+
             for i, input in enumerate(self.train_loader):
                 input = input.cuda()
                 codeword = self.encoder_ue(input)
                 output = self.decoder_bs(codeword)
-
 
                 loss = self.criterion(output, input)
                 loss.backward()
@@ -144,6 +153,17 @@ class train(nn.Module):
                 self.optimizer_ue.param_groups[0]['lr'] = self.optimizer_ue.param_groups[0]['lr'] * self.lr_decay
                 self.optimizer_bs.param_groups[0]['lr'] = self.optimizer_bs.param_groups[0]['lr'] * self.lr_decay
 
+#             __________                           __________                     __________
+#             |         \                         /         |                     |         \
+#             |          |                       |          |                     |          |
+# input ----> |encoder_ue| ----> codeword ---->  |decoder_bs| ----> output  ----> |encoder_ue| ----> estimated_codeword
+# (2,Nc,Nt)   |          |     (encoded_dim)     |          |      (2,Nc,Nt)      |          |          (encoded_dim)
+#             |_________/           |             \_________|                     |_________/             |
+#              cannot be            |               can be                         cannot be              V
+#               trained             |              trained                          trained              MSE
+#                                   |                                                                     ^
+#                                   |_____________________________________________________________________|
+
             for i, input in enumerate(self.train_loader):
                 input = input.cuda()
                 codeword = self.encoder_ue(input)
@@ -185,3 +205,5 @@ class train(nn.Module):
         torch.save(self.decoder_bs.state_dict(), './trained_models/decoder_bs_pretrain.pt')
 
         return self.encoder_ue.state_dict(), self.decoder_bs.state_dict()
+
+#### 4. show results ####
