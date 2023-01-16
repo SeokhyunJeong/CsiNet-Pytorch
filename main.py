@@ -40,6 +40,6 @@ def run(encoded_dim):
                     epochs, encoded_dim, learning_rate, lr_decay_freq, lr_decay, print_freq, device)
     online_trainer3.train_epoch()
 
-#compressed codeword dimension
+# compressed codeword dimension
 dim = 32
 run(encoded_dim=dim)
