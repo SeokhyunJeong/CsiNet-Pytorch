@@ -36,8 +36,10 @@ def channel_visualization(image):
     ax.xaxis.set_ticks_position('bottom')
     plt.show()
 
+
 class train(nn.Module):
     def __init__(self,
+                 file_path,
                  epochs,
                  encoded_dim,
                  learning_rate,
@@ -45,6 +47,9 @@ class train(nn.Module):
                  lr_decay,
                  print_freq,
                  device,
+                 online=False,
+                 encoder=None,
+                 decoder=None,
                  ):
         super().__init__()
         self.epochs = epochs
@@ -53,13 +58,17 @@ class train(nn.Module):
         self.lr_decay_freq = lr_decay_freq
         self.lr_decay = lr_decay
         self.print_freq = print_freq
+        self.online = online
 
         #### 1.load data ####
-        file_path = './filepath'
         self.train_loader, self.test_loader = load_data(file_path)
 
         self.encoder_ue = Encoder(encoded_dim).to(device)
         self.decoder_bs = Decoder(encoded_dim).to(device)
+        if encoder is not None:
+            self.encoder_ue.load_state_dict(encoder)
+        if decoder is not None:
+            self.decoder_bs.load_state_dict(decoder)
 
         self.criterion = nn.MSELoss()
         self.optimizer_ue = optim.Adam(self.encoder_ue.parameters())
@@ -68,7 +77,11 @@ class train(nn.Module):
         seed_everything(SEED)
 
     def train_epoch(self):
-        self.encoder_ue.train()
+
+        if self.online is False:
+            self.encoder_ue.train()
+        elif self.online is True:
+            self.encoder_ue.eval()
         self.decoder_bs.train()
 
         #### 2. train_epoch ####
@@ -85,8 +98,9 @@ class train(nn.Module):
 
                 loss = self.criterion(output, input)
                 loss.backward()
-                self.optimizer_ue.step()
-                self.optimizer_ue.zero_grad()
+                if self.online is False:
+                    self.optimizer_ue.step()
+                    self.optimizer_ue.zero_grad()
                 self.optimizer_bs.step()
                 self.optimizer_bs.zero_grad()
 
@@ -96,24 +110,27 @@ class train(nn.Module):
                         epoch, i, len(self.train_loader), loss=loss.item()))
 
             #### 3. validate ####
-            self.encoder_ue.eval()
-            self.decoder_bs.eval()
+        self.encoder_ue.eval()
+        self.decoder_bs.eval()
 
-            total_loss = 0
-            start = time.time()
-            with torch.no_grad():
-                for i, input in enumerate(self.test_loader):
-                    input = input.cuda()
-                    codeword = self.encoder_ue(input)
-                    output = self.decoder_bs(codeword)
-                    total_loss += self.criterion(output, input).item()
+        total_loss = 0
+        start = time.time()
+        with torch.no_grad():
+            for i, input in enumerate(self.test_loader):
+                input = input.cuda()
+                codeword = self.encoder_ue(input, test=True)
+                output = self.decoder_bs(codeword, test=True)
+                total_loss += self.criterion(output, input).item()
 
-                end = time.time()
-                t = end - start
-                average_loss = total_loss / len(list(enumerate(self.test_loader)))
-                print('NMSE %.6ftime %.3f' % (average_loss, t))
+            end = time.time()
+            t = end - start
+            average_loss = total_loss / len(list(enumerate(self.test_loader)))
+            print('NMSE %.6ftime %.3f' % (average_loss, t))
 
         channel_visualization(input.detach().cpu().numpy()[12][0])
         channel_visualization(output.detach().cpu().numpy()[12][0])
 
-#### 4. show results ####
+        torch.save(self.encoder_ue.state_dict(), './trained_models/encoder_ue_pretrain.pt')
+        torch.save(self.decoder_bs.state_dict(), './trained_models/decoder_bs_pretrain.pt')
+
+        return self.encoder_ue.state_dict(), self.decoder_bs.state_dict()
