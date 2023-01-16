@@ -78,10 +78,7 @@ class train(nn.Module):
 
     def train_epoch(self):
 
-        if self.online is False:
-            self.encoder_ue.train()
-        elif self.online is True:
-            self.encoder_ue.eval()
+        self.encoder_ue.train()
         self.decoder_bs.train()
 
         #### 2. train_epoch ####
@@ -96,11 +93,65 @@ class train(nn.Module):
                 codeword = self.encoder_ue(input)
                 output = self.decoder_bs(codeword)
 
+
                 loss = self.criterion(output, input)
                 loss.backward()
-                if self.online is False:
-                    self.optimizer_ue.step()
-                    self.optimizer_ue.zero_grad()
+                self.optimizer_ue.step()
+                self.optimizer_ue.zero_grad()
+                self.optimizer_bs.step()
+                self.optimizer_bs.zero_grad()
+
+                if i % self.print_freq == 0:
+                    print('Epoch: [{0}][{1}/{2}]\t'
+                          'Loss {loss:.4f}\t'.format(
+                        epoch, i, len(self.train_loader), loss=loss.item()))
+
+            #### 3. validate ####
+        self.encoder_ue.eval()
+        self.decoder_bs.eval()
+
+        total_loss = 0
+        start = time.time()
+        with torch.no_grad():
+            for i, input in enumerate(self.test_loader):
+                input = input.cuda()
+                codeword = self.encoder_ue(input, test=True)
+                output = self.decoder_bs(codeword, test=True)
+                total_loss += self.criterion(output, input).item()
+
+            end = time.time()
+            t = end - start
+            average_loss = total_loss / len(list(enumerate(self.test_loader)))
+            print('NMSE %.6ftime %.3f' % (average_loss, t))
+
+        channel_visualization(input.detach().cpu().numpy()[12][0])
+        channel_visualization(output.detach().cpu().numpy()[12][0])
+
+        torch.save(self.encoder_ue.state_dict(), './trained_models/encoder_ue_pretrain.pt')
+        torch.save(self.decoder_bs.state_dict(), './trained_models/decoder_bs_pretrain.pt')
+
+        return self.encoder_ue.state_dict(), self.decoder_bs.state_dict()
+
+    def train_online_epoch(self):
+
+        self.encoder_ue.eval()
+        self.decoder_bs.train()
+
+        #### 2. train_epoch ####
+        for epoch in range(self.epochs):
+
+            if epoch % self.lr_decay_freq == 0 and epoch > 0:
+                self.optimizer_ue.param_groups[0]['lr'] = self.optimizer_ue.param_groups[0]['lr'] * self.lr_decay
+                self.optimizer_bs.param_groups[0]['lr'] = self.optimizer_bs.param_groups[0]['lr'] * self.lr_decay
+
+            for i, input in enumerate(self.train_loader):
+                input = input.cuda()
+                codeword = self.encoder_ue(input)
+                output = self.decoder_bs(codeword)
+                estimated_codeword = self.encoder_ue(output)
+
+                loss = self.criterion(estimated_codeword, codeword)
+                loss.backward()
                 self.optimizer_bs.step()
                 self.optimizer_bs.zero_grad()
 
