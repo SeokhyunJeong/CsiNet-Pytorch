@@ -7,7 +7,7 @@ from train import train
 
 ########config#######
 
-epochs = 1
+epochs = 300
 learning_rate = 0.001
 lr_decay_freq = 20
 lr_decay = 0.9
