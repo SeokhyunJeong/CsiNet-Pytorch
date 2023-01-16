@@ -7,20 +7,39 @@ from train import train
 
 ########config#######
 
-epochs = 100
+epochs = 60
 learning_rate = 0.001
 lr_decay_freq = 20
 lr_decay = 0.9
-print_freq = 50
+print_freq = 100
 device = 'cuda'
 
 
 #########run########
 
 def run(encoded_dim):
-    trainer = train(epochs, encoded_dim, learning_rate, lr_decay_freq, lr_decay, print_freq, device)
-    trainer.train_epoch()
+    #offline learning
+    trainer = train('./filepath/data_large.csv',
+                    epochs, encoded_dim, learning_rate, lr_decay_freq,  lr_decay, print_freq, device)
+    encoder, decoder = trainer.train_epoch()
+    
+    #test offline learning in different scenario
+    online_trainer1 = train('./filepath/data_online.csv',
+                           0, encoded_dim, learning_rate, lr_decay_freq, lr_decay, print_freq, device,
+                           online=True, encoder=encoder, decoder=decoder)
+    online_trainer1.train_epoch()
+    
+    #online fine tuning (with offline pretrained model)
+    online_trainer2 = train('./filepath/data_online.csv',
+                           epochs, encoded_dim, learning_rate, lr_decay_freq, lr_decay, print_freq, device,
+                           online=True, encoder=encoder, decoder=decoder)
+    online_trainer2.train_epoch()
+    
+    #only learning with the online dataset
+    online_trainer3 = train('./filepath/data_online.csv',
+                    epochs, encoded_dim, learning_rate, lr_decay_freq, lr_decay, print_freq, device)
+    online_trainer3.train_epoch()
 
-
-dim = 16
+#compressed codeword dimension
+dim = 32
 run(encoded_dim=dim)
