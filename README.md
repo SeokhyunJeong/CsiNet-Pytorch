@@ -26,7 +26,7 @@ adjust parameters (dimension of codeword, the number of epochs, ...)
 
 
 **update 20230116**  
-Here is online learning with different scenario added.  
+Here is online learning with different scenarios added.  
 **What is online learning?**  
 In the real time communication scenario, each BS experience different environment (i.e., different probability density of channel).    
 Therefore, it is helpful to do fine tuning with each BS's data.  
