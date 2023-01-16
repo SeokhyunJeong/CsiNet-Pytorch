@@ -10,7 +10,8 @@ some of functions are from https://github.com/WilliamYangXu/CSITransformer.
 **data**:  
 You can download QuaDRiGa in https://quadriga-channel-model.de/ and generate channel.  
       Please put the channel data csv file in ./filepath folder.  
-      2000 sample channel data (5.3GHz) are given in ./filepath  
+      sample channel data (5.3GHz) are given in ./filepath 
+      data_online.csv (online learning dataset) is  in https://drive.google.com/drive/folders/1cWkGpdYPxrHSN55phGgyJ4YGHFZgSCS9?usp=sharing
       
 **run**:   
 open 'main.py'  
