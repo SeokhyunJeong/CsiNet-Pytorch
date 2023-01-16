@@ -25,7 +25,7 @@ adjust parameters (dimension of codeword, the number of epochs, ...)
 - main.py: run file  
 
 
-**update 20230116**
+**update 20230116**  
 Here is online learning with different scenario added.  
 What is online learning?  
 In the real time communication scenario, each BS experience different environment (i.e., different probability density of channel).    
