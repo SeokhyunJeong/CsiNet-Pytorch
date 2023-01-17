@@ -205,5 +205,3 @@ class train(nn.Module):
         torch.save(self.decoder_bs.state_dict(), './trained_models/decoder_bs_pretrain.pt')
 
         return self.encoder_ue.state_dict(), self.decoder_bs.state_dict()
-
-#### 4. show results ####
