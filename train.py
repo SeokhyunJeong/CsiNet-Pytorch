@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from data import load_data
-from model import Encoder, Decoder
+from model import Encoder, Decoder, SeriesAdditionalBlock
 
 
 import random
@@ -47,7 +47,6 @@ class train(nn.Module):
                  lr_decay,
                  print_freq,
                  device,
-                 online=False,
                  encoder=None,
                  decoder=None,
                  ):
@@ -58,13 +57,13 @@ class train(nn.Module):
         self.lr_decay_freq = lr_decay_freq
         self.lr_decay = lr_decay
         self.print_freq = print_freq
-        self.online = online
 
         #### 1.load data ####
         self.train_loader, self.test_loader = load_data(file_path)
 
         self.encoder_ue = Encoder(encoded_dim).to(device)
         self.decoder_bs = Decoder(encoded_dim).to(device)
+        self.additional_block = SeriesAdditionalBlock().to(device)
         if encoder is not None:
             self.encoder_ue.load_state_dict(encoder)
         if decoder is not None:
@@ -73,6 +72,7 @@ class train(nn.Module):
         self.criterion = nn.MSELoss()
         self.optimizer_ue = optim.Adam(self.encoder_ue.parameters())
         self.optimizer_bs = optim.Adam(self.decoder_bs.parameters())
+        self.optimizer_ad = optim.Adam(self.additional_block.parameters())
         SEED = 42
         seed_everything(SEED)
 
@@ -145,6 +145,7 @@ class train(nn.Module):
 
         self.encoder_ue.eval()
         self.decoder_bs.train()
+        self.additional_block.train()
 
         #### 2. train_epoch ####
         for epoch in range(self.epochs):
@@ -153,27 +154,30 @@ class train(nn.Module):
                 self.optimizer_ue.param_groups[0]['lr'] = self.optimizer_ue.param_groups[0]['lr'] * self.lr_decay
                 self.optimizer_bs.param_groups[0]['lr'] = self.optimizer_bs.param_groups[0]['lr'] * self.lr_decay
 
-#             __________                           __________                     __________
-#             |         \                         /         |                     |         \
-#             |          |                       |          |                     |          |
-# input ----> |encoder_ue| ----> codeword ---->  |decoder_bs| ----> output  ----> |encoder_ue| ----> estimated_codeword
-# (2,Nc,Nt)   |          |     (encoded_dim)     |          |      (2,Nc,Nt)      |          |          (encoded_dim)
-#             |_________/           |             \_________|                     |_________/             |
-#              cannot be            |               can be                         cannot be              V
-#               trained             |              trained                          trained              MSE
-#                                   |                                                                     ^
-#                                   |_____________________________________________________________________|
+#           __________                       __________                ________                    __________
+#           |         \                     /         |                |      |                    |         \
+#           |          |                   |          |                |addi  |       output_      |          |
+# input --> |encoder_ue| --> codeword -->  |decoder_bs| --> output  -->|tional| --> additional --> |encoder_ue| --> estimated_codeword
+# (2,Nc,Nt) |          |   (encoded_dim)   |          |    (2,Nc,Nt)   |block |       (2,Nc,Nt)    |          |          (encoded_dim)
+#           |_________/         |           \_________|                |______|                    |_________/               |
+#            cannot be          |             can be                    can be                      cannot be                V
+#             trained           |            trained                   trained                       trained                MSE
+#                               |                                                                                            ^
+#                               |____________________________________________________________________________________________|
 
             for i, input in enumerate(self.train_loader):
                 input = input.cuda()
                 codeword = self.encoder_ue(input)
                 output = self.decoder_bs(codeword)
-                estimated_codeword = self.encoder_ue(output)
+                output_additional = self.additional_block(output)
+                estimated_codeword = self.encoder_ue(output_additional)
 
-                loss = self.criterion(estimated_codeword, codeword)
+                loss = self.criterion(estimated_codeword, codeword) + 0.5 * self.criterion(output_additional, output)
                 loss.backward()
                 self.optimizer_bs.step()
                 self.optimizer_bs.zero_grad()
+                self.optimizer_ad.step()
+                self.optimizer_ad.zero_grad()
 
                 if i % self.print_freq == 0:
                     print('Epoch: [{0}][{1}/{2}]\t'
@@ -183,6 +187,7 @@ class train(nn.Module):
             #### 3. validate ####
         self.encoder_ue.eval()
         self.decoder_bs.eval()
+        self.additional_block.eval()
 
         total_loss = 0
         start = time.time()
@@ -191,7 +196,8 @@ class train(nn.Module):
                 input = input.cuda()
                 codeword = self.encoder_ue(input, test=True)
                 output = self.decoder_bs(codeword, test=True)
-                total_loss += self.criterion(output, input).item()
+                output_additional = self.additional_block(output, test=True)
+                total_loss += self.criterion(output_additional, input).item()
 
             end = time.time()
             t = end - start
@@ -199,7 +205,7 @@ class train(nn.Module):
             print('NMSE %.6ftime %.3f' % (average_loss, t))
 
         channel_visualization(input.detach().cpu().numpy()[12][0])
-        channel_visualization(output.detach().cpu().numpy()[12][0])
+        channel_visualization(output_additional.detach().cpu().numpy()[12][0])
 
         torch.save(self.encoder_ue.state_dict(), './trained_models/encoder_ue_pretrain.pt')
         torch.save(self.decoder_bs.state_dict(), './trained_models/decoder_bs_pretrain.pt')
