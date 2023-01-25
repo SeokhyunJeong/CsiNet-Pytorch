@@ -26,7 +26,7 @@ adjust parameters (dimension of codeword, the number of epochs, ...)
 
 
 **update 20230116**  
-Here is the online learning with different scenarios added. 
+Here is the online learning with different scenarios added.  
 The model architecture is same as CsiNet(2018), not the online learning paper(2022)
 **What is online learning?**  
 In the real time communication scenario, each BS experience different environment (i.e., different probability density of channel).    
