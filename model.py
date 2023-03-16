@@ -124,3 +124,26 @@ class Decoder(nn.Module):
         # out = channel_real + 1j * channel_imag
         # out.shape = (batch_size, Nc, Nt)
         return out
+
+ class SeriesAdditionalBlock(nn.Module):
+    # input: (batch_size, 2, Nc, Nt) initial reconstructed CSI
+    # output: (batch_size, 2, Nc, Nt) final reconstructed CSI
+    def __init__(self):
+        super().__init__()
+        self.fc = nn.Sequential(
+            nn.Linear(in_features=2 * Nc * Nt, out_features=2 * Nc * Nt),
+            nn.BatchNorm1d(num_features=2 * Nc * Nt),
+            nn.LeakyReLU(),
+            nn.Linear(in_features=2 * Nc * Nt, out_features=2 * Nc * Nt),
+            nn.BatchNorm1d(num_features=2 * Nc * Nt),
+            nn.LeakyReLU(),
+            nn.Linear(in_features=2 * Nc * Nt, out_features=2 * Nc * Nt),
+        )
+
+    def forward(self, x, test=False):
+        x = torch.reshape(x, (batch_size, -1))
+        out = self.fc(x)
+        out = out + x  # skip connection
+        out = torch.reshape(out, (batch_size, 2, Nc, Nt))
+        return out
+   
