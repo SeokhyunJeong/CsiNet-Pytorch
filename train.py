@@ -15,6 +15,17 @@ import time
 gpu_list = '0'
 os.environ["CUDA_VISIBLE_DEVICES"] = gpu_list
 
+def NMSE(x, x_hat):
+    x_test_real = torch.reshape(x[:, 0, :, :], (len(x), -1))
+    x_test_imag = torch.reshape(x[:, 1, :, :], (len(x), -1))
+    x_hat_real = torch.reshape(x_hat[:, 0, :, :], (len(x_hat), -1))
+    x_hat_imag = torch.reshape(x_hat[:, 1, :, :], (len(x_hat), -1))
+    power = torch.sum(x_test_real ** 2 + x_test_imag ** 2, axis=1)
+    mse = torch.sum((x_test_real - x_hat_real) ** 2 + (x_test_imag - x_hat_imag) ** 2, axis=1)
+    nmse = torch.mean(mse / power)
+    # print(power)
+    # print(mse)
+    return nmse
 
 def seed_everything(seed=42):
     random.seed(seed)
@@ -126,7 +137,8 @@ class train(nn.Module):
                 input = input.cuda()
                 codeword = self.encoder_ue(input, test=True)
                 output = self.decoder_bs(codeword, test=True)
-                total_loss += self.criterion(output, input).item()
+                #total_loss += self.criterion(output_additional, input).item()
+                total_loss += NMSE(output_additional, input) 
 
             end = time.time()
             t = end - start
@@ -197,8 +209,9 @@ class train(nn.Module):
                 codeword = self.encoder_ue(input, test=True)
                 output = self.decoder_bs(codeword, test=True)
                 output_additional = self.additional_block(output, test=True)
-                total_loss += self.criterion(output_additional, input).item()
-
+                #total_loss += self.criterion(output_additional, input).item()
+                total_loss += NMSE(output_additional, input) 
+                
             end = time.time()
             t = end - start
             average_loss = total_loss / len(list(enumerate(self.test_loader)))
