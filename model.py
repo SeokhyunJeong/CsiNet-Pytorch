@@ -8,7 +8,8 @@ batch_size = 16
 Nc = 32  # The number of subcarriers
 Nt = 32  # The number of transmit antennas
 N_channel = 2  # Real, Imaginary
-encoded_dim = 32  # dimension of the codeword
+# revise 20230525: erase useless constant variable 'encoded_dim' declared in this file.
+# encoded_dim = 32  # dimension of the codeword
 
 
 def channel_visualization(image):
