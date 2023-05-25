@@ -138,7 +138,7 @@ class train(nn.Module):
                 codeword = self.encoder_ue(input, test=True)
                 output = self.decoder_bs(codeword, test=True)
                 #total_loss += self.criterion(output_additional, input).item()
-                total_loss += NMSE(output_additional, input) 
+                total_loss += NMSE(output, input) 
 
             end = time.time()
             t = end - start
