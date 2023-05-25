@@ -125,7 +125,7 @@ class Decoder(nn.Module):
         # out.shape = (batch_size, Nc, Nt)
         return out
 
- class SeriesAdditionalBlock(nn.Module):
+class SeriesAdditionalBlock(nn.Module):
     # input: (batch_size, 2, Nc, Nt) initial reconstructed CSI
     # output: (batch_size, 2, Nc, Nt) final reconstructed CSI
     def __init__(self):
